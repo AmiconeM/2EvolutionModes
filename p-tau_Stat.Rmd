@@ -1,0 +1,159 @@
+---
+title: "P-tau statistics"
+author: "Amicone Massimo"
+date: "24/11/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(writexl)
+library(RColorBrewer)
+library(xlsx)
+```
+
+## What conditions do you want to compare?
+Set the parameters that correspond to the conditions you want to analyse.
+```{r, set parameters}
+# parameters to change
+
+model="DirSel_Gamma_shape1"                    ## model used for the simulations
+Us=c(10^(-9),10^(-8),10^(-7),10^(-6),10^(-5))  ## mutation rates used for the simulations
+N=10^7                                         ## pop size used for the simulations
+Pb=1                                           ## proportion of ben. mutations used for the simulations
+Delta=0.05                                     ## expected mutation effect used for the simulations
+simulations=20                                 ## number of simulations
+seed=0                                         ## random seed used for the simulations
+t_tot=10000                                    ## number of generations used for the simulations
+p_sample=100                                   ## sampling period
+inFit=1                                        ## initial population fitness used for the simulations
+
+```
+
+## Color code for the different conditions  
+The colors will distinguish the different mutation rate conditions.
+Change pallette in case you need more than 9.
+```{r,colors}
+colors=brewer.pal(n=length(Us),name="Set1") ### change pallette in case you need more than 9 colors
+light_colors=c()                            ### to create the same colors but 20% transparent
+med_colors=c()                              ### to create the same colors but 50% transparent
+for(i in 1:length(Us)){
+  col=col2rgb(colors[i])
+  c_light=rgb(col[1]/255,col[2]/255,col[3]/255,0.8)
+  c_med=rgb(col[1]/255,col[2]/255,col[3]/255,0.5)
+  light_colors=c(light_colors,c_light)
+  med_colors=c(med_colors,c_med)
+}
+```
+
+```{r,colors2}
+color_range <- colorRampPalette(c("#2D3919", "#99BB63"))
+colors=color_range(length(Us)) 
+#colors=brewer.pal(n=length(Us),name="Set1") ### change pallette in case you need more than 9 colors
+light_colors=c()                            ### to create the same colors but 20% transparent
+med_colors=c()                              ### to create the same colors but 50% transparent
+for(i in 1:length(Us)){
+  col=col2rgb(colors[i])
+  c_light=rgb(col[1]/255,col[2]/255,col[3]/255,0.8)
+  c_med=rgb(col[1]/255,col[2]/255,col[3]/255,0.5)
+  light_colors=c(light_colors,c_light)
+  med_colors=c(med_colors,c_med)
+}
+```
+
+## If you need to compute the p-tau, run the following 2 boxes.
+## If you have already computed it previously, upload directly the p-tau file from line 133.
+
+
+##Load Sojour times and propagator files
+The next box will import the sojour time and propagator data (previously analysed), compile them in a dataframe called P_tau and export an Excel file with the computed scaled p-tau.  
+
+```{r,Load St and propagator}
+
+p_sample=100 ## sampling period
+t_final=10000 ## final time point
+
+
+Sojour_Data=read.xlsx(paste("Sojour_time_",model,"_s",Delta,"_",t_final,"generations",".xlsx",sep=""),sheetIndex = 1)
+Propagator_Data=read.xlsx(paste("Propagator_",model,"_s",Delta,"_",t_final,"generations",".xlsx",sep=""),sheetIndex = 1)
+colnames(Sojour_Data)=c("NUb","Mutation effect","W0","Model","pop_ID","Frequency","Sojour")
+```
+
+For each population this code performs the following steps:
+i) count the number of observed mutations  
+ii) compute the proportion of mutations that have reached a given frequency, f.
+(here f takes the values between 0 and 1, with intervals of 0.01 (e.g. 0, 0.01, 0.02, ...))  
+iii) export a table with propagator frequencies for each population/condition.
+```{r,compute p-tau}
+Sojour_Data$NUb=as.factor(Sojour_Data$NUb)
+
+Prop=c()
+Tau=c()
+NU_b=c()
+Model=c()
+W0=c()
+Mut_effect=c()
+pop_ID=c()
+
+top=0.95
+bottom=0.3
+
+for(u in 1:length(Us)){
+  nu_b=N*Us[u]*Pb
+  if(u==5){nu_b=100}
+  data_sj=Sojour_Data[which(Sojour_Data$NUb==nu_b),]
+  data_pr=Propagator_Data[which(Propagator_Data$NU_b==nu_b),]
+  
+  ## compute P-tau for each population
+  for(replica in 1:simulations){
+    y1=which(data_sj$Frequency*10==top*10 & data_sj$pop_ID==replica)
+    y0=which(data_sj$Frequency==bottom & data_sj$pop_ID==replica)
+    tau=data_sj$Sojour[y1]/data_sj$Sojour[y0]
+    
+    x1=which(colnames(data_pr)==paste("X",top,sep=""))
+    x0=which(colnames(data_pr)==paste("X",bottom,sep=""))
+    p=data_pr[which(data_pr$pop_ID==replica),x1]/data_pr[which(data_pr$pop_ID==replica),x0]
+    
+    NU_b=c(NU_b,nu_b)
+    Model=c(Model,model)
+    pop_ID=c(pop_ID,replica)
+    W0=c(W0,inFit)
+    Mut_effect=c(Mut_effect,Delta)
+    Tau=c(Tau,tau)
+    Prop=c(Prop,p)
+    }
+}
+
+P_tau=data.frame(NU_b,Mut_effect,W0,Model,pop_ID,Prop,Tau)
+write_xlsx(P_tau, paste("P-Tau_",model,"_s",Delta,"_",t_final,"generations",".xlsx",sep=""))
+```
+
+
+##Load P-tau data
+```{r, load pre-analyzed dataset}
+P_tau=read.xlsx(paste("P-Tau_",model,"_s",Delta,"_",t_final,"generations",".xlsx",sep=""),sheetIndex = 1)
+
+```
+
+
+##Plotting p-tau
+Here we plot by adding the 95% confidence ellipses
+```{r,Plot p-tau SUMMARY across NUb, ggplot ellipse}
+
+Data=P_tau
+Data$NUb=as.factor(Data$NU_b)
+Data$Prop_adj=pmax(0,Data$Prop+rnorm(length(Data$Prop),mean=0,sd=0.001))
+
+y_title=expression("scaled fixation time, "~tau)
+x_title=expression("scaled fixation probability, p")
+
+#The default "t" assumes a multivariate t-distribution with 95% confidence interval
+ggplot(Data, aes(Prop_adj, Tau,group=NUb,fill=NUb,colour=NUb))+scale_color_manual(values=colors)+ geom_hline(yintercept=2.01, linetype="dashed", color = "#161D0C",size=0.8)+ geom_vline(xintercept=1, linetype="dashed", color = "#161D0C",size=0.8)+geom_point(size = 2.5,shape=22,alpha=0.9)+ stat_ellipse(type = "t",na.rm = T,col=rep(colors,each=52),size=0.8)+labs(title="",x=x_title, y =y_title)+ theme_bw()+scale_fill_manual(values=colors)+ theme(axis.text.x = element_text(color="black",size=12),axis.text.y = element_text(color="black",size=12),axis.title.y = element_text(color="black", size=14),axis.title.x = element_text(color="black", size=14),legend.title = element_text(size=20),legend.text = element_text(size=15),legend.key.size = unit(1,"line"))+
+  guides(color = guide_legend(override.aes = list(size = 8)))+ scale_x_continuous(breaks = seq(0,1,0.2),limits = c(0, 1.01))+ scale_y_continuous(breaks = seq(0,5,1),limits = c(0,5.5))
+
+#ggsave(paste("P_Tau_",model,"_s",Delta,"_",t_final,"generations.tiff",sep=""),width=5,height=5)
+ggsave(paste("P_Tau_",model,"_s",Delta,"_",t_final,"generations.png",sep=""),width=5,height=5,dpi = 600)
+
+```
+
