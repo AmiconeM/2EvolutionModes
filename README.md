@@ -2,7 +2,7 @@
 
 This project contains:
 
-- code to simulate evolution under directional selection and Gamma-distributed mutation effects ("Amicone_DirectionalSelection_Gamma.R").
+- code to simulate evolution under directional selection and Gamma-distributed mutation effects ("DirectionalSelection_Gamma.R").
 
 - metadata file to run the R script ("Metadata.txt") under the specified conditions.
 
