@@ -21,7 +21,7 @@ bash Metadata_DirSel.txt
 bash Metadata_EcoSel.txt
 (this should take less than 1 hour and produce the outcome of simulations under competition for resources)
 
-3) Navigate the output folders to find the tables of raw data of mutation trajectories and the mean fitness across population.
+3) Access the output folders to see the tables of raw data of mutation trajectories across population.
 
 In order to produce the final statistics reported in Frazao et al. 2022, these raw data were processed by the code described in the supplementary materials of Frazao et al. 2022.
 
