@@ -1,0 +1,2 @@
+#name of program	R	NUb	sigma	Wo	#runs
+Rscript EcologicalSelection_Amicone2021.R	2	10	0.05	0.9	20
