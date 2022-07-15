@@ -13,7 +13,8 @@ This project contains:
 Instructions to reproduce the row data presented in Extended Data Figure 10 of Frazao et al. 2022:
 1) Install R (We used R version 3.6.1 (2019-07-05))
 
-2) Run simulations from bash command line as:
+2) Access via terminal the folder containing the scripts and metadata files.
+3) Run simulations from bash command line as:
 
 bash Metadata_DirSel.txt
 (this should take less than 10 minutes and produce the outcome of simulations under directional selection)
@@ -21,7 +22,7 @@ bash Metadata_DirSel.txt
 bash Metadata_EcoSel.txt
 (this should take less than 1 hour and produce the outcome of simulations under competition for resources)
 
-3) Access the output folders to see the tables of raw data of mutation trajectories across population.
+4) Access the output folders to see the tables of raw data of mutation trajectories across population.
 
 In order to produce the final statistics reported in Frazao et al. 2022, these raw data were processed by the code described in the supplementary materials of Frazao et al. 2022.
 
