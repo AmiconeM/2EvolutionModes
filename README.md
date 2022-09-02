@@ -1,4 +1,5 @@
 # 2EvolutionModes
+[![DOI](https://zenodo.org/badge/486260829.svg)](https://zenodo.org/badge/latestdoi/486260829)
 
 This project contains:
 
